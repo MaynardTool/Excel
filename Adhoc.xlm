@@ -1,0 +1,33 @@
+Sub retrieve_mf_update()
+    MsgBox "You should have an open MF for this to work properly."
+End Sub
+
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    If Sheets("Journal Extract Summary").Range("G9").Value = Sheets("Journal Extract Summary").Range("G8").Value Then
+        Sheets("Journal Extract Summary").Range("E2").Value = "COMPLETED: " & Sheets("Journal Extract Summary").Range("C4").Value & " OMTrack Request #" & Sheets("Journal Extract Summary").Range("C5").Value
+        Sheets("Journal Extract Summary").Range("E4").Value = "This is to confirm that this request is now completed. Kindly verify the output. You may contact someone from our team for the password. See below details."
+    Else
+        Sheets("Journal Extract Summary").Range("E2").Value = "IN PROGRESS: " & Sheets("Journal Extract Summary").Range("C4").Value & " OMTrack Request #" & Sheets("Journal Extract Summary").Range("C5").Value
+        Sheets("Journal Extract Summary").Range("E4").Value = "This is to confirm that this request is still in progress. See below details."
+    End If
+
+    Set KhingRange = Sheets("Adhoc Status").Range("E3:E200")
+    For Each cell In KhingRange
+        Select Case cell.Value
+        Case Is = "Completed"
+            cell.Interior.ColorIndex = 43
+        Case Is = "Running"
+            cell.Interior.ColorIndex = 27
+        Case Is = "In Adhoc"
+            cell.Interior.ColorIndex = 40
+        Case Is = "In MSTest"
+            cell.Interior.ColorIndex = 20
+        Case Else
+        End Select
+    Next
+        
+End Sub
+
+
