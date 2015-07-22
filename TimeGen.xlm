@@ -1,0 +1,219 @@
+Mod1
+Sub EditTimeSheet(sDFolder, nteam, nempno, nfname, nmname, lname, datefrom As Date, dateto As Date, holday, holtype, schedname, thisname, defaultin, defaultout)
+
+
+Dim nFile As String
+Dim dateval As Date
+Dim dayname As String
+Dim i As Long
+'Dim holday(1 To 7) As Date
+
+nFile = lname & ".xlsx"
+
+RowCount = 7
+
+Workbooks.Open Filename:=sDFolder & nFile
+ActiveWorkbook.Worksheets(1).Range("B1").Value = nteam
+ActiveWorkbook.Worksheets(1).Range("B2").Value = nempno
+ActiveWorkbook.Worksheets(1).Range("B3").Value = lname
+ActiveWorkbook.Worksheets(1).Range("C3").Value = nfname
+ActiveWorkbook.Worksheets(1).Range("D3").Value = nmname
+
+datefrom = Format(datefrom, "mm/dd/yyyy")
+dateto = Format(dateto, "mm/dd/yyyy")
+dateval = datefrom
+
+For i = 1 To 16
+    
+ActiveWorkbook.Worksheets(1).Range("A" & RowCount).Value = ""
+
+    If dateval > dateto Then
+       i = 16
+       ActiveWorkbook.Worksheets(1).Range("A" & RowCount).Value = ""
+       ActiveWorkbook.Worksheets(1).Range("B" & RowCount).Value = ""
+       ActiveWorkbook.Worksheets(1).Range("C" & RowCount).Value = ""
+       ActiveWorkbook.Worksheets(1).Range("D" & RowCount).Value = ""
+    Else
+        ActiveWorkbook.Worksheets(1).Range("A" & RowCount).Value = ""
+        ActiveWorkbook.Worksheets(1).Range("A" & RowCount).Value = dateval
+                
+        Call CheckSched(schedname, dateval, thisname, timein, timeout, i, defaultin, defaultout)
+        UserForm1.Hide
+    
+        
+        Call CheckDay(dateval, dayname, holday, holtype, i, schedname)
+        
+        dateval = Format(DateAdd("d", 1, dateval))
+        dayname = Format((dateval), "ddd")
+
+        RowCount = RowCount + 1
+        
+    End If
+Next i
+
+ActiveWorkbook.Save
+Workbooks(nFile).Close
+
+End Sub
+
+Mod2
+Sub CheckDay(dateval As Date, dayname As String, holday, holtype, i As Long, schedname)
+
+
+dateval = Format(dateval, "mm/dd/yyyy")
+dayname = Format(dateval, "ddd")
+timein = Cells((i + 6), "C").Value
+timeinhr = Format(timein, "hh")
+
+timeout = Cells((i + 6), "D").Value
+timeouthr = Format(timeout, "hh")
+
+j = 1
+While j < 8
+    If holday(j) <> "" Then
+       holday(j) = Format(holday(j), "mm/dd/yyyy")
+    End If
+    
+    If dateval = holday(j) Then
+       Cells((i + 6), "B").Value = holtype(j)
+       Cells((i + 6), "C").Value = ""
+       Cells((i + 6), "D").Value = ""
+       j = 8
+    Else
+        j = j + 1
+    End If
+Wend
+
+End Sub
+
+Mod3
+Sub CheckSched(schedname, dateval, thisname, timein, timeout, i As Long, defaultin, defaultout)
+
+Dim FirstResource As String
+Dim datesched As Date
+Dim coldate As Long
+Dim timegenerator As Workbook
+Dim timeinout As String
+Dim Data As Variant
+Dim FoundSW As String
+Dim rownum As Long
+Dim resourcenum As Long
+Dim resourcename As String
+
+rownum = 4
+daterow = rownum - 2
+coldate = 2
+colname = 1
+foundate = "FALSE"
+FoundSW = "FALSE"
+resourcenum = 0
+FirstResource = "TRUE"
+Count = 2
+
+Name = schedname
+
+While FirstResource = "TRUE"
+If Workbooks(thisname).Worksheets("Sched Copy").Cells(rownum, colname).Value <> "" Then
+    resourcenum = resourcenum + 1
+    rownum = rownum + 1
+Else
+    FirstResource = "FALSE"
+End If
+Wend
+
+rownum = 4
+
+
+For k = 1 To 30
+    If FoundSW = "FALSE" Then
+        resourcename = Workbooks(thisname).Worksheets("Sched Copy").Cells(rownum, colname).Value
+        If UCase(resourcename) = UCase(Name) Then
+            FoundSW = "TRUE"
+        Else
+            rownum = rownum + 1
+            Count = Count + 1
+        End If
+    End If
+Next k
+
+      'clean up the fields
+     Cells((i + 6), "B").Value = ""
+     Cells((i + 6), "C").Value = ""
+     Cells((i + 6), "D").Value = ""
+
+If k > 30 And FoundSW = "FALSE" Then
+    If i = 1 Then
+       'MsgBox "Resource " & Name & " Does not exist on the Schedule Sheet: Sched Copy. Setting time in and time out to default"
+    End If
+          dateday = Format(dateval, "DDD")
+     
+     Select Case UCase(dateday)
+     Case "SAT"
+        Cells((i + 6), "C").Value = ""
+        Cells((i + 6), "D").Value = ""
+     Case "SUN"
+        Cells((i + 6), "C").Value = ""
+        Cells((i + 6), "D").Value = ""
+     Case Else
+        Cells((i + 6), "B").Value = "Reg Duty"
+        Cells((i + 6), "C").Value = defaultin
+        Cells((i + 6), "D").Value = defaultout
+     End Select
+
+Else
+    While foundate = "FALSE"
+        If Workbooks(thisname).Worksheets("Sched Copy").Cells(daterow, coldate).Value <> "" Then
+           datesched = Format(Workbooks(thisname).Worksheets("Sched Copy").Cells(daterow, coldate).Value, "mm/dd/yyyy")
+           dateval = Format(dateval, "mm/dd/yyyy")
+            If dateval = datesched Then
+                foundate = "TRUE"
+                timeinout = Workbooks(thisname).Worksheets("Sched Copy").Cells(rownum, coldate).Value
+                If timeinout <> "" Then
+                    Select Case UCase(timeinout)
+                    Case "SL"
+                        Cells((i + 6), "B").Value = "SL"
+                    Case "VL"
+                        Cells((i + 6), "B").Value = "VL"
+                    Case "EL"
+                        Cells((i + 6), "B").Value = "Oth Leave"
+                    Case "HOL"
+                    Case "WFH"
+                    Case Else
+                        Cells((i + 6), "B").Value = "Reg Duty"
+                        Const Delimiter As String = " - "
+                        Data = Split(timeinout, Delimiter)
+                        timein = Trim$(Data(0))
+                        timeout = Trim$(Data(1))
+                        Cells((i + 6), "C").Value = timein
+                        Cells((i + 6), "D").Value = timeout
+                    End Select
+    
+                End If
+                
+            End If
+            
+        End If
+            coldate = coldate + 1
+    
+        If coldate > 16 Then
+            rownum = rownum + (resourcenum + 4)
+            daterow = rownum - Count
+            coldate = 2
+        End If
+    Wend
+End If
+
+End Sub
+
+Mod4
+Sub ResetInput()
+Range("J2").Value = ""
+Range("J3").Value = ""
+Range("J6").Value = ""
+Range("J7").Value = ""
+Range("I11", "I18").Value = ""
+Range("J11", "J18").Value = ""
+Range("L3").Value = ""
+Range("M3").Value = ""
+Range("B3", "H21").Value = ""
+End Sub
