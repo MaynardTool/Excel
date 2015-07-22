@@ -1,0 +1,300 @@
+Sub Test1()
+
+Dim HostExplorer As Object
+Dim MyHost As Object
+Dim Rc, i As Integer
+Dim jobName, endPrompt, prodDate As String
+
+Dim iPSUpdateTimeout
+
+On Error GoTo GenericErrorHandler
+
+Set HostExplorer = CreateObject("HostExplorer") ' Initialize HostExplorer Object
+Set MyHost = HostExplorer.HostFromProfile("Default 3270") ' Set object for the desired session
+If MyHost Is Nothing Then GoTo NoSession
+
+iPSUpdateTimeout = 60       ' WaitPSUpdated timeout set to 60 seconds
+  
+'Validation
+If MyHost.TextRC(3, 3, 6) <> "Cmdkey" Then
+    MsgBox "Please go to TPX SESSION MANAGER MENU", vbCritical, "Mainframe"
+    Exit Sub
+End If
+
+Rc = MyHost.Keys("/adba")
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Pf12")
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+Rc = MyHost.Keys("3.1")
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Enter")
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+Rc = MyHost.Keys("C")
+If Rc <> 0 Then GoTo OnKeyboardError
+'MyHost.RunCmd ("Enter")
+
+i = 7
+jobName = Trim(Range("B" & i).Value)
+prodDate = MyHost.TextRC(7, 65, 8)
+
+Do While jobName <> ""
+   
+    'Jobname
+    Rc = MyHost.Keys(jobName)
+    'If Rc <> 0 Then GoTo OnKeyboardError
+    'MyHost.RunCmd ("Tab")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    'Rc = MyHost.Keys(prodDate)
+    Rc = MyHost.PutText(prodDate, 21, 72)
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Enter")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    
+    Range("C" & i).Value = MyHost.TextRC(8, 31, 5)
+    Range("D" & i).Value = MyHost.TextRC(8, 37, 5)
+    
+    'Status
+    If MyHost.TextRC(8, 55, 2) = "OK" Then
+        Range("F" & i).Value = "Completed"
+    ElseIf MyHost.TextRC(8, 55, 2) = "23" Then
+        Range("F" & i).Value = "Abend"
+    Else
+        Range("F" & i).Value = "Not Yet Started"
+    End If
+    
+    MyHost.RunCmd ("Pf3")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    
+    
+    Rc = MyHost.Keys("C")
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Erase-EOF")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    
+    
+    
+    'Color
+    If Trim(Range("F" & i).Value) = "Completed" Then
+        Range("F" & i).Select
+       With Selection.Interior
+            .Pattern = xlSolid
+            .PatternColorIndex = xlAutomatic
+            .Color = 5287936
+            .TintAndShade = 0
+            .PatternTintAndShade = 0
+        End With
+    
+    ElseIf Trim(Range("F" & i).Value) = "Abend" Then
+        Range("F" & i).Select
+        With Selection.Interior
+            .Pattern = xlSolid
+            .PatternColorIndex = xlAutomatic
+            .Color = 65535
+            .TintAndShade = 0
+            .PatternTintAndShade = 0
+        End With
+    ElseIf Trim(Range("F" & i).Value) = "Not Yet Started" Then
+        Range("F" & i).Select
+         With Selection.Interior
+            .Pattern = xlSolid
+            .PatternColorIndex = xlAutomatic
+            .ThemeColor = xlThemeColorAccent3
+            .TintAndShade = -0.249977111117893
+            .PatternTintAndShade = 0
+        End With
+    ElseIf Trim(Range("F" & i).Value) = "Abend" Then
+        Range("F" & i).Select
+        With Selection.Interior
+            .Pattern = xlSolid
+            .PatternColorIndex = xlAutomatic
+            .Color = 255
+            .TintAndShade = 0
+            .PatternTintAndShade = 0
+        End With
+    
+    
+    End If
+    
+    
+    i = i + 1
+    jobName = Trim(Range("B" & i).Value)
+
+Loop
+
+endPrompt = MsgBox("Done!", vbOKOnly, "EOD")
+If endPrompt = vbOK Then
+    Exit Sub
+End If
+    
+'Terminator
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+Rc = MyHost.WaitIdle(5)
+Exit Sub
+    
+    
+  
+  '-------------------- Runtime Error Handlers --------------------
+GenericErrorHandler:
+  MsgBox "Error " & Err & " : """ & Error(Err) & """ has occurred on line " & Erl - 1 & "." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+NoSession:
+  MsgBox "Profile ""Default 3270"" is not running." & Chr(10) & "Unable to execute macro.", 16, "HostExplorer Macro Error"
+  Exit Sub
+
+OnWaitPSUpdatedTimeout:
+  MsgBox "Timeout occured waiting for host to update screen." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+OnKeyboardError:
+  MsgBox "Unable to type string on host screen." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+
+End Sub
+
+Sub Clear3()
+
+    Range("C7:F29").Select
+    Selection.ClearContents
+    With Selection.Interior
+        .Pattern = xlNone
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+    
+End Sub
+
+Sub Clear1()
+
+    Range("C7:F36").Select
+    Selection.ClearContents
+    With Selection.Interior
+        .Pattern = xlNone
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+    
+End Sub
+
+Sub Ave1()
+
+Dim HostExplorer As Object
+Dim MyHost As Object
+Dim Rc, i As Integer
+Dim jobName, endPrompt As String
+
+Dim iPSUpdateTimeout
+
+On Error GoTo GenericErrorHandler
+
+Set HostExplorer = CreateObject("HostExplorer") ' Initialize HostExplorer Object
+Set MyHost = HostExplorer.HostFromProfile("Default 3270") ' Set object for the desired session
+If MyHost Is Nothing Then GoTo NoSession
+
+iPSUpdateTimeout = 60       ' WaitPSUpdated timeout set to 60 seconds
+  
+'Validation
+If MyHost.TextRC(3, 3, 6) <> "Cmdkey" Then
+    MsgBox "Please go to TPX SESSION MANAGER MENU", vbCritical, "Mainframe"
+    Exit Sub
+End If
+
+Rc = MyHost.Keys("/dcu2")
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Pf12")
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+MyHost.RunCmd ("Home")
+Rc = MyHost.Keys("psjo")
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Enter")
+
+i = 7
+jobName = Trim(Range("B" & i).Value)
+
+
+Do While jobName <> ""
+    
+    'Jobname
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    Rc = MyHost.Keys(jobName)
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Enter")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    'Start
+    Range("H" & i).Value = MyHost.TextRC(9, 28, 5)
+    'End
+    Range("J" & i).Value = MyHost.TextRC(9, 37, 5)
+       
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Pf3")
+        
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    MyHost.RunCmd ("Home")
+    Rc = MyHost.Keys("psjo")
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Enter")
+   
+    
+    i = i + 1
+    jobName = Trim(Range("B" & i).Value)
+
+Loop
+
+'Home
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Pf3")
+
+'Home again
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Pf3")
+
+endPrompt = MsgBox("Done!", vbOKOnly, "EOD")
+If endPrompt = vbOK Then
+    Exit Sub
+End If
+    
+'Terminator
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+Rc = MyHost.WaitIdle(5)
+Exit Sub
+        
+  
+  '-------------------- Runtime Error Handlers --------------------
+GenericErrorHandler:
+  MsgBox "Error " & Err & " : """ & Error(Err) & """ has occurred on line " & Erl - 1 & "." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+NoSession:
+  MsgBox "Profile ""Default 3270"" is not running." & Chr(10) & "Unable to execute macro.", 16, "HostExplorer Macro Error"
+  Exit Sub
+
+OnWaitPSUpdatedTimeout:
+  MsgBox "Timeout occured waiting for host to update screen." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+OnKeyboardError:
+  MsgBox "Unable to type string on host screen." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+End Sub
+
+Sub Clear4()
+
+    Range("H7:J36").Select
+    Selection.ClearContents
+
+End Sub
+
