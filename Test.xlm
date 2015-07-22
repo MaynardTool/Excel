@@ -1,0 +1,889 @@
+Global gblDialog, gRefType As String
+Global savePostDte As String
+    
+Sub Test()
+ 
+  gblDialog = "user"
+  Call Main_Validation(iErr)
+  
+End Sub
+
+Sub Main_Validation(iErr)
+
+  For colsnum = 2 To 21
+    If colsnum = 12 Or colsnum = 16 Then
+    Else
+        noofrows = WorksheetFunction.CountA(Range(Cells(21, colsnum), Cells(500, colsnum)))
+        If rangemax < 21 + noofrows Then
+        rangemax = 21 + noofrows - 1
+
+        End If
+    End If
+  Next colsnum
+
+  noofrows = rangemax
+  
+  Dim r As Range, cell As Range, myNumber As Long
+  Worksheets(2).Activate
+  startRow = 21
+  'noofrows = WorksheetFunction.CountA(Range("B20:B500")) - 1
+  Worksheets(2).Cells(4, 9).EntireColumn.NumberFormat = "@"                           'MS UserID
+  Worksheets(2).Cells(5, 9).EntireColumn.NumberFormat = "@"                           'Mailgroup
+  Worksheets(2).Cells(6, 9).EntireColumn.NumberFormat = "@"                           'Request Date
+  Worksheets(2).Cells(12, 9).EntireColumn.NumberFormat = "@"                          'Request for Cath-All Request
+  Worksheets(2).Cells(13, 9).EntireColumn.NumberFormat = "@"                          'Explain
+  Worksheets(2).Cells(14, 3).EntireColumn.NumberFormat = "@"                          'Involve Client accounts
+  Worksheets(2).Cells(15, 9).EntireColumn.NumberFormat = "@"                          'Write-off accounts
+  Worksheets(2).Cells(startRow, 2).EntireColumn.NumberFormat = "@"                    'Holding Type
+  Worksheets(2).Cells(startRow, 3).EntireColumn.NumberFormat = "@"                    'Account System ID
+  Worksheets(2).Cells(startRow, 4).EntireColumn.NumberFormat = "@"                    'Reference Type
+  Worksheets(2).Cells(startRow, 5).EntireColumn.NumberFormat = "@"                    'Reference ID
+  Worksheets(2).Cells(startRow, 6).EntireColumn.NumberFormat = "@"                    'Entitled Account
+  Worksheets(2).Cells(startRow, 7).EntireColumn.NumberFormat = "@"                    'Cusip
+  Worksheets(2).Cells(startRow, 10).EntireColumn.NumberFormat = "@"                   'Source Account Number
+  Worksheets(2).Cells(startRow, 14).EntireColumn.NumberFormat = "@"                   'Destination Account Number
+  Worksheets(2).Cells(startRow, 17).EntireColumn.NumberFormat = "############0.00"    'Transaction Amount
+  Worksheets(2).Cells(startRow, 18).EntireColumn.NumberFormat = "############0.00"    'Base Amount
+  
+  iErr = False
+  
+FirstValidation:
+    iCol = 9
+    For sRow = 4 To 15
+      iCellVal = Trim(Worksheets(2).Cells(sRow, iCol).Value)
+      Call Validate_MSiD(iCellVal, sRow, iCol, iErr, iExit)
+      If iExit Then GoTo ExitLoop
+        
+      sRow = 5
+      iCellVal = Trim(Worksheets(2).Cells(sRow, iCol).Value)
+      Call Validate_MailGroup(iCellVal, sRow, iCol, iErr, iExit)
+      If iExit Then GoTo ExitLoop
+      
+      sRow = 6
+      iCellVal = Trim(Worksheets(2).Cells(sRow, iCol).Value)
+      Call Validate_RequestDate(iCellVal, sRow, iCol, iErr, iExit)
+      If iExit Then GoTo ExitLoop
+      
+      sRow = 12
+      iCellVal = Trim(Worksheets(2).Cells(sRow, iCol).Value)
+      Call Validate_Reason(iCellVal, sRow, iCol, iErr, iExit)
+      If iExit Then GoTo ExitLoop
+    
+      sRow = 13
+      iCellVal = Trim(Worksheets(2).Cells(sRow, iCol).Value)
+      Call Validate_Explain(iCellVal, sRow, iCol, iErr, iExit)
+      If iExit Then GoTo ExitLoop
+      
+      sRow = 14
+      iCellVal = Trim(Worksheets(2).Cells(sRow, iCol).Value)
+      Call Validate_CatchAll(iCellVal, sRow, iCol, iErr, iExit)
+      If iExit Then GoTo ExitLoop
+      
+      sRow = 15
+      iCellVal = Trim(Worksheets(2).Cells(sRow, iCol).Value)
+      Call Validate_WriteOff(iCellVal, sRow, iCol, iErr, iExit)
+      If iExit Then GoTo ExitLoop
+    Next
+    
+
+MainLoop:
+  'For iRow = startRow To startRow + noofrows - 1
+   For iRow = startRow To rangemax
+    iCol = 2 'Holding Type Column
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_HoldType(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 3 'Account System ID Column
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_AccntSysID(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 4 'Reference Type
+    gRefType = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_RefType(gRefType, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 5 'Reference Id
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_RefId(gRefType, iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 6 'Entitled Account
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_EntAccnt(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 7 'Cusip
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_Cusip(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 8 'Transaction Currency
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_TranCCy(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 9 'Source Debit/Credit
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_DrCr(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 10 'Source Account Number
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_Acct(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 11 'Source Core Bal Type
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_SCoreBal(iCellVal, iRow, 6, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    'iCol = 12 'Source Core Bal Type ID
+    'iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    'Call Validate_EntAcc(iCellVal, iRow, iCol, iErr, iExit)
+    'If iExit Then GoTo ExitLoop
+    
+    iCol = 13 'Destination Debit/Credit
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_DrCr(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 14 'Destination Account Number
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_Acct(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 15 'Destination Core Bal Type
+    iCellVal = Trim(Worksheets(2).Cells(iRow, iCol).Value)
+    Call Validate_DCoreBal(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 17 'Transaction Amount
+    iCellVal = Worksheets(2).Cells(iRow, iCol).Value
+    Call Validate_TxnAmnt(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 18 'Base Amount
+    iCellVal = Worksheets(2).Cells(iRow, iCol).Value
+    Call Validate_BaseAmount(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 19 'TD Eff Date
+    iCellVal = Worksheets(2).Cells(iRow, iCol).Value
+    Call Validate_TDEffDate(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 20 'SD Eff Date
+    iCellVal = Worksheets(2).Cells(iRow, iCol).Value
+    Call Validate_SDEffDate(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 21 'Journal Description by requestor
+    iCellVal = Worksheets(2).Cells(iRow, iCol).Value
+    Call Validate_JrDescbyReq(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    iCol = 22 'Journal Description to post
+    iCellVal = Worksheets(2).Cells(iRow, iCol).Value
+    Call Validate_JrDesc(iCellVal, iRow, iCol, iErr, iExit)
+    If iExit Then GoTo ExitLoop
+    
+    
+  Next
+  
+ExitLoop:
+  If gblDialog = "user" Then
+     If iErr Then
+        MsgBox "WARNING: At least one element encountered an error, please correct and re-validate entries.", vbExclamation, "Warning"
+     Else
+        MsgBox "The journals have passed the basic validations." _
+        & vbLf & "Please upload this to 'BALMANGUI' "
+     End If
+  End If
+  
+End Sub
+
+Sub Validate_MSiD(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "MS User ID"
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Please enter MS User ID."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_MailGroup(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Mail Group"
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Please enter Mailgroup."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_RequestDate(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Request Date"
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Please enter Request Date."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_Reason(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Reason for Catch-All Request"
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Please enter Valid Reason for the request."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+Sub Validate_Explain(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Explanation"
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Please enter your explanation."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_CatchAll(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Client Accounts"
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Please confirm if Catch-All Involve Client Accounts. Please answer Yes or No."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_WriteOff(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Write-Off Accounts"
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Please confirm if these involve Write-off accounts." & vbLf & "Please answer Yes or No."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_HoldType(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Holding Type"
+    If myCell = "" Then
+      myErr = True
+       myMsg = "Holding Type is mandatory!"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    If myCell <> "Morgan Stanley" Then
+       myErr = True
+       myMsg = "Valid value is Morgan Stanley only"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_AccntSysID(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Account System ID"
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Account System ID is mandatory."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    If myCell <> "1435" And myCell <> "1436" Then
+    'If IsEmpty(myCell) Then
+       myErr = True
+       myMsg = "Valid value is 1435 or 1436 only"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_RefType(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Reference Type"
+     If myCell = "" Then
+       myErr = True
+       myMsg = "Reference Type is mandatory."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    If myCell <> "Announcement Id" And myCell <> "Deal Id" And myCell <> "Client Code" Then
+       myErr = True
+       myMsg = "Valid value is Announcement Id, Deal Id or Client Code only"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_RefId(mygRefType, myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Reference ID"
+    'for Announcement Id
+    If mygRefType = "Announcement Id" Then
+        If myCell = "" Then
+           myErro = True
+           myMsg = "Reference ID is mandatory."
+           Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+           If myExit Then
+              Exit Sub
+           End If
+        End If
+        
+        If Len(myCell) <> 12 Then
+           myErr = True
+           myMsg = "Announcement Id: " & myCell & vbLf & "Valid format is 12 digits."
+           Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+           If myExit Then
+              Exit Sub
+           End If
+        End If
+        
+        If Not (IsNumeric(myCell)) Then
+           myErr = True
+           myMsg = "Announcement Id must be numeric " & myCell
+           Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+           If myExit Then
+              Exit Sub
+           End If
+        End If
+        
+    'for Deal Id
+    ElseIf mygRefType = "Deal Id" Then
+    
+        If myCell = "" Then
+           myErro = True
+           myMsg = "Reference ID is mandatory."
+           Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+           If myExit Then
+              Exit Sub
+           End If
+        End If
+        
+        If Len(myCell) <> 9 Then
+           myErr = True
+           myMsg = "Deal Id: " & myCell & vbLf & "Valid format is 9 digits."
+           Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+           If myExit Then
+              Exit Sub
+           End If
+        End If
+        
+        If Not (IsNumeric(myCell)) Then
+           myErr = True
+           myMsg = "Deal Id must be numeric " & myCell
+           Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+           If myExit Then
+              Exit Sub
+           End If
+        End If
+    End If
+
+
+End Sub
+
+Sub Validate_Cusip(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Cusip"
+    If Not (Len(myCell) = 0 And myCell = " ") Then
+       If Len(myCell) <> 9 Then
+          myErr = True
+          myMsg = "Cusip is mandatory and should be 9 characters"
+          Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+          If myExit Then
+             Exit Sub
+          End If
+       End If
+    End If
+     
+End Sub
+
+Sub Validate_TranCCy(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Tran CCY"
+    
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Tran CCY is mandatory."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    If Len(myCell) <> 3 Then
+       myErr = True
+       myMsg = "Tran CCY should be 3 characters: " & myCell
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_DrCr(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Debit/Credit"
+    
+    If myCell = "" Then
+       myErr = True
+       myMsg = "DB/CR is mandatory."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    If myCell <> "Debit" And myCell <> "Credit" Then
+       myErr = True
+       myMsg = "Valid value is Debit or Credit only"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_Acct(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Account Number"
+    
+     If myCell = "" Then
+       myErr = True
+       myMsg = "TAPS Account is mandatory."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    
+    If Len(myCell) <> 9 Then
+       myErr = True
+       myMsg = "TAPS Account should be 9 characters"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    If Left(myCell, 1) <> "0" Then
+       myErr = True
+       myMsg = "TAPS Account should begin with 0"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+
+    If InStr(myCell, "-") <> 0 Then
+       myErr = True
+       myMsg = "TAPS Account must not contain '-' character"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+
+End Sub
+
+Sub Validate_EntAccnt(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Entitled Account"
+    Set r = Range("K21:K500")
+    For Each cell In r
+       If cell.Value = "Accrued Dividend Control Amount" Then
+            myErr = True
+            'Cells(myRow, myCol).ClearContents
+            myMsg = "CBT is Accrued Dividend Control Amount." & vbLf & "Entitled Account is mandatory."
+            Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+            If myExit Then
+              Exit Sub
+            End If
+        End If
+     Next
+
+    'If Range("K21:K500").Value = "Accrued Dividend Control Amount" Then
+     ' myErr = True
+     ' myMsg = "CBT is Accrued Dividend Control Amount, program will clear Entitled Account"
+      'MsgBox myMsg
+      'Cells(myRow, myCol).ClearContents
+      'If myExit Then
+       '  Exit Sub
+      'End If
+    'End If
+    
+    'If myCell <> "" Then
+    '    myErr = True
+    '    myMsg = "Entitled Account was entered" & vbLf & "Source and Destination Core Bal Type should be" & vbLf & "Accrued Dividend Control Amount"
+    '    MsgBox myMsg
+        'Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+    '    If myExit Then
+    '        Exit Sub
+    '    End If
+    'End If
+End Sub
+
+Sub Validate_SCoreBal(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Source Core Bal Type"
+    
+    If myCell = "" Then
+        myErr = True
+        myMsg = "Source Core Bal Type is mandatory."
+        Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+        If myExit Then
+            Exit Sub
+        End If
+    End If
+    
+    If myCell = "Accrued Dividend Control Amount" Then
+        myErr = True
+        MsgBox "For Core Bal Type as accrued" & vbLf & "dividend control amount," & vbLf & "entitled account is mandatory.", vbExclamation, "Source Core Bal Type"
+        'Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+        If myExit Then
+            Exit Sub
+        End If
+    End If
+End Sub
+
+Sub Validate_DCoreBal(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Destination Core Bal Type"
+    
+    If myCell = "" Then
+        myErr = True
+        myMsg = "Destination Core Bal Type is mandatory."
+        Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+        If myExit Then
+            Exit Sub
+        End If
+    End If
+    
+    If myCell = "Accrued Dividend Control Amount" Then
+        myErr = True
+        MsgBox "For Core Bal Type as accrued" & vbLf & "dividend control amount," & vbLf & "entitled account is mandatory.", vbExclamation, "Destination Core Bal Type"
+        'Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+        If myExit Then
+            Exit Sub
+        End If
+    End If
+End Sub
+
+Sub Validate_TxnAmnt(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Transaction Amount"
+    
+    If myCell = "" Then
+       myErr = True
+       myMsg = "Transaction Amount is mandatory."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    If Len(myCell) > 16 Then
+       myErr = True
+       myMsg = "Transaction Amount: " & myCell & vbLf & "Valid format is 13 whole number with 2 decimal places."
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+    
+    'If myCell < 0 Then
+    '   myErr = True
+    '   myMsg = "Transaction Amount must not be negative value: " & myCell
+    '   Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+    '   If myExit Then
+    '      Exit Sub
+    '   End If
+    'End If
+    
+    If Not (IsNumeric(myCell)) Then
+       myErr = True
+       myMsg = "Transaction Amount should be numeric " & myCell
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+
+    If InStrRev(myCell, ".") > 0 Then
+       DecimalPlaces = Len(myCell) - (InStrRev(myCell, "."))
+       If DecimalPlaces > 2 Then
+          myErr = True
+          myMsg = "Amount should have at most 2 decimal places: " & myCell
+          Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+          If myExit Then
+             Exit Sub
+          End If
+       End If
+       If InStrRev(myCell, ".") - 1 > 13 Then
+          myErr = True
+          myMsg = "Transaction Amount: " & myCell & vbLf & "Valid format is 13 whole number with 2 decimal places."
+          Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+          If myExit Then
+             Exit Sub
+          End If
+       End If
+    Else
+       If Len(myCell) > 13 Then
+          myErr = True
+          myMsg = "Transaction Amount: " & myCell & vbLf & "Valid format is 13 whole number with 2 decimal places."
+          Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+          If myExit Then
+             Exit Sub
+          End If
+       End If
+    End If
+End Sub
+
+Sub Validate_BaseAmount(myCell, myRow, myCol, myErr, myExit)
+     myTitle = "Base Amount"
+     
+     If myCell = "" Then
+          myErr = True
+          myMsg = "Base Amount is mandatory."
+          Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+          If myExit Then
+             Exit Sub
+          End If
+    End If
+     
+     'If Not (Len(myCell) = 0 Or myCell = " ") Then
+     If Len(myCell) > 16 Then
+        myErr = True
+        myMsg = "Base Amount: " & myCell & vbLf & "Valid format is 13 whole number with 2 decimal places."
+        Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+        If myExit Then
+            Exit Sub
+         End If
+     End If
+    
+    'If myCell < 0 Then
+    '    myErr = True
+    '    myMsg = "Base Amount should not be a negative value: " & myCell
+    '    Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+    '    If myExit Then
+    '        Exit Sub
+    '    End If
+    ' End If
+      
+       If Not (IsNumeric(myCell)) Then
+          myErr = True
+          myMsg = "Base Amount should be numeric " & myCell
+          Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+          If myExit Then
+             Exit Sub
+          End If
+       End If
+
+       If InStrRev(myCell, ".") > 0 Then
+          DecimalPlaces = Len(myCell) - (InStrRev(myCell, "."))
+          If DecimalPlaces > 2 Then
+             myErr = True
+             myMsg = "Base Amount should have at most 2 decimal places: " & myCell
+             Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+             If myExit Then
+                Exit Sub
+             End If
+          End If
+          If InStrRev(myCell, ".") - 1 > 13 Then
+             myErr = True
+             myMsg = "Base Amount: " & myCell & vbLf & "Valid format is 13 whole number with 2 decimal places."
+             Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+             If myExit Then
+                Exit Sub
+             End If
+          End If
+       Else
+          If Len(myCell) > 13 Then
+             myErr = True
+             myMsg = "Base Amount: " & myCell & vbLf & "Valid format is 13 whole number with 2 decimal places."
+             Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+             If myExit Then
+                Exit Sub
+             End If
+          End If
+       End If
+    
+End Sub
+
+Sub Validate_TDEffDate(myCell, myRow, myCol, myErr, myExit)
+    
+    myTitle = "TD Eff Date"
+    
+    If myCell = "" Then
+          myErr = True
+          myMsg = "TD Effective Date is mandatory."
+          Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+          If myExit Then
+             Exit Sub
+          End If
+    End If
+    
+    dateStr = Mid(myDate, 1, 4) & "-" & Mid(myDate, 6, 2) & "-" & Mid(myDate, 9, 2) '2015-04-13
+    If Not (Len(myCell) = 10) Or Mid(myCell, 6, 2) > 12 Then
+       myErr = True
+       myMsg = "Invalid Effective Date(YYYY-MM-DD): " & myCell
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+       
+       dateStr = Mid(myDate, 1, 4) & "-" & Mid(myDate, 6, 2) & "-" & Mid(myDate, 9, 2)
+       If Not (Len(myCell) = 10) Or Mid(myCell, 6, 2) > 12 Then
+          myErr = True
+          MsgBox "New Effective Date is invalid." & vbLf & "Please correct the cell directly."
+          Exit Sub
+       End If
+    End If
+    
+End Sub
+
+Sub Validate_SDEffDate(myCell, myRow, myCol, myErr, myExit)
+    
+    myTitle = "SD Eff Date"
+    
+    If myCell = "" Then
+          myErr = True
+          myMsg = "SD Effective Date is mandatory."
+          Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+          If myExit Then
+             Exit Sub
+          End If
+    End If
+    
+    dateStr = Mid(myDate, 1, 4) & "-" & Mid(myDate, 6, 2) & "-" & Mid(myDate, 9, 2) '2015-04-13
+    If Not (Len(myCell) = 10) Or Mid(myCell, 6, 2) > 12 Then
+       myErr = True
+       myMsg = "Invalid Effective Date(YYYY-MM-DD): " & myCell
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+       
+       dateStr = Mid(myDate, 1, 4) & "-" & Mid(myDate, 6, 2) & "-" & Mid(myDate, 9, 2)
+       If Not (Len(myCell) = 10) Or Mid(myCell, 6, 2) > 12 Then
+          myErr = True
+          MsgBox "New Effective Date is invalid." & vbLf & "Please correct the cell directly."
+          Exit Sub
+       End If
+    End If
+    
+End Sub
+
+Sub Validate_JrDescbyReq(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Journal Description by Requestor"
+    If Len(myCell) = 0 Or Len(myCell) > 180 Then
+       myErr = True
+       myMsg = "Journal description is mandatory" & vbLf & "Maximum Characters for Journal Description is 180"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Validate_JrDesc(myCell, myRow, myCol, myErr, myExit)
+    myTitle = "Journal Description to Post"
+    If Len(myCell) = 0 Or Len(myCell) > 180 Then
+       myErr = True
+       myMsg = "Journal description is mandatory" & vbLf & "Maximum Characters for Journal Description is 180"
+       Call Error_Rtn(myRow, myCol, myTitle, myMsg, myCell, myExit)
+       If myExit Then
+          Exit Sub
+       End If
+    End If
+End Sub
+
+Sub Error_Rtn(errRow, errCol, errTitle, errMsg, errValue, errExit)
+
+  If gblDialog = "user" Then
+    errExit = False
+    Worksheets(2).Cells(errRow, errCol).Select
+    errNewValue = InputBox(errMsg, errTitle, errValue)
+    If Len(errNewValue) > 0 Then
+        Worksheets(2).Cells(errRow, errCol).Value = errNewValue
+        errValue = errNewValue
+    Else
+       errExit = True
+    End If
+  End If
+End Sub
+Sub Put_Date(myRow, myCol, myDate, myType)
+  Select Case myType
+    Case vbString, vbDouble, vbEmpty
+         Worksheets(1).Cells(myRow, myCol).Value = Trim(myDate)
+    Case vbDate
+         Worksheets(1).Cells(myRow, myCol).Value = CDate(Mid(myDate, 5, 2) & "/" & Mid(myDate, 7, 2) & "/" & Mid(myDate, 1, 4))
+  End Select
+End Sub
+Sub New_Sheet()
+'
+' New_Sheet Macro
+' Macro recorded 13/03/2007 by Iain Craigie
+'
+
+'
+    Range("g4:h4").Select
+    Selection.ClearContents
+    Range("g5:h5").Select
+    Selection.ClearContents
+    Range("g6:h6").Select
+    Selection.ClearContents
+    Range("g12:l12").Select
+    Selection.ClearContents
+    Range("g13:o13").Select
+    Selection.ClearContents
+    Range("g14").Select
+    Selection.ClearContents
+    Range("g15").Select
+    Selection.ClearContents
+    Range("E13").Select
+    Selection.ClearContents
+    Range("B19:i3471").Select
+    Selection.ClearContents
+    Range("k19:m3471").Select
+    Selection.ClearContents
+    Range("o19:s3471").Select
+    Selection.ClearContents
+End Sub
+
+Sub Test2()
+
+    If (A1) = "" Then
+        MsgBox ("None")
+    End If
+    
+
+
+End Sub
