@@ -1,0 +1,55 @@
+Sub FormatCell()
+
+thiswork = ThisWorkbook.Name
+MsgBox "Select the file to Format."
+origfile = Application.GetOpenFilename()
+
+    If origfile = False Then
+        MsgBox "No File Specified.", vbExclamation, "ERROR"
+        Exit Sub
+    Else
+        Workbooks.Open Filename:=origfile
+        Workbooks(thiswork).Worksheets(1).Cells(3, 5).Value = origfile
+        
+        ofile = ActiveWorkbook.Name
+    
+        n = WorksheetFunction.CountA(Worksheets(1).Range("A:A"))
+        For i = 1 To n
+            If IsError(Cells(i, 1).Value) Then
+                If Cells(i, 1).Value = CVErr(2029) Then
+                    Stemp = Trim(Cells(i, 1).Formula)
+                    Do While Left(Stemp, 1) = "="
+                        Stemp = Trim(Mid(Stemp, 2))
+                    Loop
+                        Cells(i, 1).Value = Stemp
+                End If
+            End If
+        Next i
+        
+        saveprompt = InputBox("Save the updated file with different filename? Y/N")
+        
+        Select Case UCase(saveprompt)
+        Case "Y"
+            updtfile = Application.GetSaveAsFilename()
+            If updtfile = False Then
+                MsgBox "No FileName Specified. Please save the updated file manually", vbExclamation, "ERROR"
+                Exit Sub
+            Else
+                Workbooks(thiswork).Worksheets(1).Cells(5, 5).Value = updtfile
+                ActiveWorkbook.SaveAs Filename:=updtfile
+                MsgBox "Updated file has been saved as: " & updtfile
+            End If
+            
+        Case "N"
+            ActiveWorkbook.Save
+            MsgBox "Updated file has been saved"
+            ActiveWorkbook.SaveAs Filename:=origfile
+            
+        Case Else
+            MsgBox "No Valid Selection Specified. Please save the updated file manually", vbExclamation
+            Exit Sub
+        End Select
+    End If
+End Sub
+
+
