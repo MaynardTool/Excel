@@ -1,0 +1,171 @@
+Sub Test4()
+
+
+Dim HostExplorer As Object
+Dim MyHost As Object
+Dim Rc, i As Integer
+Dim jobName, fromDate1, fromDate2, toDate1, toDate2, insTruction As String
+
+Dim iPSUpdateTimeout
+
+On Error GoTo GenericErrorHandler
+
+Set HostExplorer = CreateObject("HostExplorer") ' Initialize HostExplorer Object
+Set MyHost = HostExplorer.HostFromProfile("Default 3270") ' Set object for the desired session
+If MyHost Is Nothing Then GoTo NoSession
+
+iPSUpdateTimeout = 60       ' WaitPSUpdated timeout set to 60 seconds
+  
+'Validation
+If MyHost.TextRC(3, 3, 6) <> "Cmdkey" Then
+    MsgBox "Please go to TPX SESSION MANAGER MENU", vbCritical, "Mainframe"
+    Exit Sub
+End If
+
+Rc = MyHost.Keys("/dcrq")
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Pf12")
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+Rc = MyHost.Keys("1")
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Enter")
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+Rc = MyHost.Keys("2")
+If Rc <> 0 Then GoTo OnKeyboardError
+MyHost.RunCmd ("Enter")
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+
+i = 4
+skipCounter = 0
+jobName = Trim(Range("B" & i).Value)
+fromDate1 = Format(Now, "yyyyMMdd")
+fromDate2 = Format(Now, "MM/dd/yy")
+toDate1 = DateAdd("d", 2, fromDate2)
+toDate2 = Format(toDate1, "yyyyMMdd")
+insTruction = "FOR USLO WEEKEND CONVERSION"
+
+Do While jobName <> ""
+    
+    'Jobname
+    Rc = MyHost.Keys(jobName)
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Tab")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    Rc = MyHost.Keys("H")
+    If Rc <> 0 Then GoTo OnKeyboardError
+    'Rc = MyHost.Keys(prodDate)
+    Rc = MyHost.PutText(fromDate1, 7, 20)
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Tab")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    Rc = MyHost.PutText(toDate2, 7, 30)
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Tab")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    Rc = MyHost.Keys(insTruction)
+    If Rc <> 0 Then GoTo OnKeyboardError
+    
+    
+    Rc = MyHost.Keys("C")
+    If Rc <> 0 Then GoTo OnKeyboardError
+    MyHost.RunCmd ("Erase-EOF")
+    Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+    If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+    
+     'Status
+    Range("C" & i).Value = "Done"
+    'Color
+    Range("C" & i).Select
+        With Selection.Interior
+             .Pattern = xlSolid
+             .PatternColorIndex = xlAutomatic
+             .Color = 5287936
+             .TintAndShade = 0
+             .PatternTintAndShade = 0
+         End With
+         
+    If skipCounter = 15 Then
+    
+        skipCounter = 0
+        MyHost.RunCmd ("Pf3")
+        Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+        If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+        Rc = MyHost.Keys("2")
+        If Rc <> 0 Then GoTo OnKeyboardError
+        MyHost.RunCmd ("Enter")
+        Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+        If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+        
+    End If
+
+    i = i + 1
+    skipCounter = skipCounter + 1
+    jobName = Trim(Range("B" & i).Value)
+
+Loop
+
+endPrompt = MsgBox("Done!", vbOKOnly, "USLO Weekend Conversion")
+If endPrompt = vbOK Then
+    Exit Sub
+End If
+
+'Terminator
+Rc = MyHost.WaitPSUpdated(iPSUpdateTimeout, True)
+If Rc <> 0 Then GoTo OnWaitPSUpdatedTimeout
+Rc = MyHost.WaitIdle(5)
+Exit Sub
+
+
+  '-------------------- Runtime Error Handlers --------------------
+GenericErrorHandler:
+  MsgBox "Error " & Err & " : """ & Error(Err) & """ has occurred on line " & Erl - 1 & "." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+NoSession:
+  MsgBox "Profile ""Default 3270"" is not running." & Chr(10) & "Unable to execute macro.", 16, "HostExplorer Macro Error"
+  Exit Sub
+
+OnWaitPSUpdatedTimeout:
+  MsgBox "Timeout occured waiting for host to update screen." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+OnKeyboardError:
+  MsgBox "Unable to type string on host screen." & Chr(10) & "Unable to continue macro execution.", 16, "HostExplorer Basic Macro Error"
+  Exit Sub
+
+
+End Sub
+
+Sub TestDate()
+
+Dim test, fromDate1, fromDate2 As String
+
+'Test1 = "12/09/14"
+fromDate1 = Format(Now, "yyyyMMdd")
+fromDate2 = Format(Now, "MM/dd/yy")
+toDate1 = DateAdd("d", 2, fromDate2)
+toDate2 = Format(toDate1, "yyyyMMdd")
+'test = fromDate
+'toDate = DateAdd("D", 2, test)
+MsgBox (toDate2)
+MsgBox (fromDate1)
+
+End Sub
+
+Sub Clear4()
+
+    Range("C4:C43").Select
+    Selection.ClearContents
+    With Selection.Interior
+        .Pattern = xlNone
+        .TintAndShade = 0
+        .PatternTintAndShade = 0
+    End With
+    
+End Sub
